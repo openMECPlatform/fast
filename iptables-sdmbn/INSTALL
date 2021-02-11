@@ -1,0 +1,42 @@
+install iptables-sdmbn in FAST:
+sudo apt-get install libmnl-dev
+sudo apt-get install conntrack
+Install libnetfilter-conntrack compatible with conntract version in operating system. On ubuntu 16.04: libnetfilter_conntrack-1.0.6 for the conntrack version conntrack v1.4.3 
+if conntrack gets error, try to remove all files in /usr/local/lib/:
+sudo rm -rf libnetfilter_conntrack.*
+
+wget https://www.netfilter.org/projects/libnetfilter_conntrack/files/libnetfilter_conntrack-1.0.6.tar.bz2
+./configure
+make
+sudo make install
+To test conntrack function in utils, run make check
+
+Enable iptable in Linux: 
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+2. In sdmbn-iptables
+make
+sudo make install
+./iptables-sdmbn -i ens33
+
+
+If the conntrack table is empty, try to run tcpdump before test
+
+======================================================================================
+
+Wire -> NIC -> tcpdump -> netfilter/iptables
+iptables -> tcpdump -> NIC -> Wire
+Perhaps I should add a few details. tcpdump is based on libpcap, a library which creates a packet socket. When a regular packet is received in the network stack, the kernel first checks to see whether there is a packet socket interested in the newly arrived packet and, if there is one, it forwards the packet to that packet socket. If the option ETH_P_ALL is chosen, then all protocols go thru the packet socket.
+libpcap implements one such packet socket with the option activated, keeps a copy for its own use, and duplicates the packet back onto the network stack, where it is processed by the kernel in the usual way, including passing it first to netfilter, the kernel-space counterpart of iptables. Same thing, in reverse order (i.e., first netfilter then last the passage thru the packet socket), on the way out.
+Is this prone to hacking? But of course. There are certainly proof-of-concept rootkits using libpcap to intercept communications destined to the rootkit before the firewall can lay its hand on them. But even this pales in comparison with the fact that a simple Google query unearths working code hiding traffic even from libpcap. Still, most professionals think the advantages vastly outweigh the disadvantages, in debugging network packet filters.
+
+
+Command used to view the UDP timeout value:
+sysct -a | grep conntrack_udp
+net.netfilter.nf_conntrack_udp_timeout = 30
+Because the default timeout value is very small for the UDP protocol and is not
+sufficient time for the testing purpose. The default timer has to be changed, to make sure
+that connection states will not expire while the test is running. For this reason, the UDP
+timeout value has been increased by 1000 times, i.e., (30000seconds), and the following
+command has been used to fix the timeout problem.
+sysctl -w net.netfilter.nf_conntrack_udp_timeout=30000

@@ -1,0 +1,15 @@
+Note: In Bro, completely disable lock init, lock, and unlock. Otherwise, program gets stuck, especially in main.cc and Sessions.cc
+
+install bro 2.1 on ubuntu 16.04:
+sudo apt-get install cmake
+sudo apt-get install flex bison libbison-dev libmagic-dev swig -y
+sudo apt install libboost-dev
+sudo apt-get install libboost-all-dev
+git clone --recursive https://github.com/bro/bro.git -b v2.1
+cd bro
+patch -p1 < bro.patch
+./configure
+Add following lines in link.txt and relink.txt to /home/test/01-github/fast/bro/bro/build/src/CMakeFiles/bro.dir
+-lsdmbn -ljson-c -lboost_serialization
+make
+sudo make install

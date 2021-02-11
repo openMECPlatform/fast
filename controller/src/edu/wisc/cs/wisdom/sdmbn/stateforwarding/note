@@ -1,0 +1,102 @@
+# Take away from OpenNF code:
+  - (only check for packet with ethernet type 0x88B5) Middlebox class allows to specify the connected switch port. Available at middleboxDiscovered method (line 262)
+  - (only check for packet with ethernet type 0x88B5) Middlebox port found at MiddleboxDiscovery class (line 59), retrieving from packet-in message sent from switch to controller
+  - Root Update found in MoveOperation class (line 473)
+  - OpenNF call forwarding module to update flow rule to re-direct user traffic to dest VNF (see StateForwarding class line 418).
+  Only at the dst switch
+  - Number of in_flight packets: this.packetCount++ in MoveOperation class (line 510)
+  - Last packet flag as this.lastPacket in MoveOperation class (line 512). This is done by modifying DivServ field inside packets
+  - Used to add flag or tag to packets: http://floodlight.github.io/floodlight/javadoc/floodlight/net/floodlightcontroller/packet/IPv4.html#IPv4--
+  - Packets are retrieved from Packet-In messages at middleboxes MiddleboxInput class and then applied tag (line 43)
+  - OpenNF only assigned flags to the packet sent through packet-in messages
+  - chanel folder in OpenNF for all things regarding the communication between OpenNF and MBs
+  - Proceeding of the OpenNF evaluation is written in TestTimedMoveAll class (execute setup line 229 in TestTimed class)
+  - Interessant!!! Turns out OpenNF did not enable the forwarding module in TestTimedMoveAll.prop file.
+  Thus, the forwarding is executed by changeForwarding method (line 219 in TestTimed) --> tested! confirm it
+  - receiveEventsAck method created in MoveOperation class is executed in StateChannel (line 117) only if state transfer is finished  --> tested! confirmed it for order-preserving case
+  - OpenNF initially issue the GetPerflow message and sends it to MBs. This is excuted by issueGet method in MoveOperation (line 138)
+  - The actual move is executed in TestTimedMoveAll class (line 64)
+  - State msg is received via StateChannel (line 96) and then put in chunk in MoveOperation (line 168)
+  - getSwitch(long dpid) available in v0.91 but not in v0.9. Later versions remove that completely:
+  https://github.com/floodlight/floodlight/commit/2af68ac50d9450ba719fbf6272d3bcbb079ca720
+  - installForwardingRules method in 54 (FlowUtil) already allows to forward to multiple ports
+  - Add cookie can be done through AppCookie.makeCookie. See FlowUtil for more details
+  - Find root between two switches (line 247 in Forwarding class):
+  Route route = routingEngine.getRoute(srcDap.getSwitchDPID(), (short)srcDap.getPort(), dstDap.getSwitchDPID(), (short)dstDap.getPort());
+  - Middleboxes is defined as protected Map<String, Middlebox> middleboxes; (TestTimed line 41)
+  - Number of middleboxes instances is initiated to 2 for src and dst in TestTimed
+  - mb is initiated  in line 213 from sdmbnManager class and set sw and port in line 266 through packet-in message
+  - interessant!!! a discovery message encapsulated by a reserved ether type 0x88B5 (to avoid any conflict) with the destination is
+  broadcast MAC address oxFFFF. Look at file discovery.c in prads, which is enabled in makefile (SOURCES)
+
+
+# Code explanation in PRADS:
+json_object_object_add in SDMBNJson.c is the method of json lib in C
+
+Print json object:   printf ("The json object created: %sn",json_object_to_json_string(jobj));
+
+L177 in  SDMBNJson.c contains the state
+json_compose_put_perflow_state
+
+
+In PRADS, state is all about the connection: (prads.h line 516)
+
+typedef struct _connection {
+    struct   _connection *prev;
+    struct   _connection *next;
+    time_t   start_time;          /* connection start time */
+    time_t   last_pkt_time;       /* last seen packet time */
+    uint64_t cxid;                /* connection id */
+    uint8_t  reversed;            /* 1 if the connection is reversed */
+    uint32_t af;                  /* IP version (4/6) AF_INET */
+    uint16_t hw_proto;            /* layer2 protocol */
+    uint8_t  proto;               /* IP protocoll type */
+    struct   in6_addr s_ip;       /* source address */
+    struct   in6_addr d_ip;       /* destination address */
+    uint16_t s_port;              /* source port */
+    uint16_t d_port;              /* destination port */
+    uint64_t s_total_pkts;        /* total source packets */
+    uint64_t s_total_bytes;       /* total source bytes */
+    uint64_t d_total_pkts;        /* total destination packets */
+    uint64_t d_total_bytes;       /* total destination bytes */
+    uint8_t  s_tcpFlags;          /* tcpflags sent by source */
+    uint8_t  __pad__;             /* pads struct to alignment */
+    uint8_t  d_tcpFlags;          /* tcpflags sent by destination */
+    uint8_t  check;               /* Flags spesifying checking */
+    struct   _asset *c_asset;     /* pointer to src asset */
+    struct   _asset *s_asset;     /* pointer to server asset */
+    uint32_t gotten;              /* last SDMBN get call that returned this. 0: not moved, -1: moved but don't raise event, >0: moved, raise event */
+} connection;
+
+Here new connection is pushed to the head of bucket. Remember in PRADs all state are stored in bucket with a specific size. (line 296, 220 in cxt.c)
+
+State (or connection information) is serialized in L1326 (asserts.c)
+
+
+Serialize per flow and deserialize flow are executed in cxt.c (L590 & L735). Put flow simply add connection
+
+
+
+Dev-plan:
+
+  - Develop Docker python (https://docker-py.readthedocs.io/en/stable/) from Apmec: https://stackoverflow.com/questions/37144357/link-containers-with-the-docker-python-api
+  - Apmec deploys containers and send a move request to fast framework
+  - Proposed template:
+      SDN controller driver: Ryu  or State management driver: FAST
+      Mgmt. strategy: multi-back
+      ...
+  - if Apmec and Ryu deployed on same server, then use API format 127.0.0.1/api/state-mgmt
+
+  - When creating the app, Apmec can specify in the template which interface/port used for traffic and state management.
+  This information is then sent to SDN controller for further processing
+
+
+NOTE about the MAKEFILE in PRADS: prads/src/MAKEFILE. The shared library is ADDED to Line 8:
+LDFLAGS+=-lpcap -lpcre -lresolv -lsdmbn -ljson-c -lpthread
+
+
+Number of in-flight packets, look at MobeOperation class at line 521
+
+srcMb as a server opening port and listening the connection from destMb
+
+Total move time is calculated at FAST controller, first time receive getperflowack from srcmb (state.c line 780) - getputperflowack from destmb (state.c line 346)

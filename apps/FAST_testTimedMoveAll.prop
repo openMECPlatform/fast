@@ -1,0 +1,29 @@
+floodlight.modules = net.floodlightcontroller.storage.memory.MemoryStorageSource,\
+net.floodlightcontroller.core.FloodlightProvider,\
+net.floodlightcontroller.threadpool.ThreadPool,\
+net.floodlightcontroller.staticflowentry.StaticFlowEntryPusher,\
+edu.wisc.cs.wisdom.sdmbn.core.SdmbnManager,\
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig,\
+net.floodlightcontroller.counter.CounterStore,\
+net.floodlightcontroller.perfmon.PktInProcessingTime
+net.floodlightcontroller.restserver.RestApiServer.port = 8080
+net.floodlightcontroller.core.FloodlightProvider.openflowport = 6633
+edu.wisc.cs.wisdom.sdmbn.core.SdmbnManager.stateport = 7790
+edu.wisc.cs.wisdom.sdmbn.core.SdmbnManager.eventport = 7791
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.TestedInstances = 2
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.TraceReplaySwitchPort = 1
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.TraceReplayHost = 192.168.0.1
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.TraceReplayFile = youtube.pcap
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.TraceReplayRate = 2500
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.TraceReplayNumPkts = -1
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.OperationDelay = 70
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.StopDelay = 80
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.Scope = PERFLOW
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.Guarantee = NO_GUARANTEE
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.Optimization = NO_OPTIMIZATION
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.Scenario = MULTI_MIG
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.ConsecMig = 1
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.Scenario = OTL
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.Scenario = SPLIT_MERGE
+edu.wisc.cs.wisdom.sdmbn.apps.testing.TestFwStateMultiMig.Scenario = MULTI_PAIRS
+
